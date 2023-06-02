@@ -17,6 +17,16 @@ A Java example:
 In singel-thread: All 4 are atmoicity <br>
 In multi-thread: Only 1 is atmoicity <br>
 
+## Apache Spark
+### Deploy mode
+Client: If submit your application from a gateway machine that is physically co-located with your worker machines (e.g. Master node in a standalone EC2 cluster). In this setup, client mode is appropriate. In client mode, the driver is launched directly within the spark-submit process which acts as a client to the cluster. The input and output of the application is attached to the console. Thus, this mode is especially suitable for applications that involve the REPL (e.g. Spark shell). **Spark standalone mode doesn't support cluster mode**.
+
+Cluster: If application is submitted from a machine far from the worker machines (e.g. locally on your laptop), it is common to use cluster mode to minimize network latency between the drivers and the executors. **In spark client mode, the driver process must be up and running the whole time when the spark job is in execution. So if you have a truly long job that say take many hours to run, you need to make sure the driver process is still up and running, and that the driver session is not auto-logout.** **After submitting a job to run in cluster mode, the process can go away. The cluster mode will keep running. So this is typically how a production job will run: the job can be triggered by a timer, or by an external event and then the job will run to its completion without worrying about the lifetime of the process submitting the spark job.**
+
+**In client mode, you can call sc.collect() to gather all the data back from all executors, and then write/save the returned data to a local Linux file on local disk.** **Now this may not work for cluster mode, as the 'driver' typically run in a different remote host.** The data written up therefore need to be persisted in a common mounted volume (such as GPFS, NFS) or in distributed file system like HDFS. If the job is running under Hadoop/YARN, the more common way for cluster mode is simply ask each executor to persist the data to HDFS, and not to run collect( ) at all. Collect() actually have scalability issue when there are a large number of executors returning large amount of data - it can overwhelm the driver process.
+
+if in the **same local network with the cluster, it's better using the client mode and submit it from local machine.** If the cluster is far away, either submit locally with cluster mode, or rsync the jar to the remote cluster and submit it there, in client or cluster mode, depending on how heavy the driver program is on resources.*
+
 ### reference
 https://book.mixu.net/distsys/single-page.html <br>
 https://www.cnblogs.com/yeyang/p/13576636.html <br>
